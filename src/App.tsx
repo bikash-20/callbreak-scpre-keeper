@@ -21,6 +21,7 @@ import { SettingsScreen } from './components/screens/SettingsScreen';
 import { SetupScreen } from './components/screens/SetupScreen';
 import { SummaryScreen } from './components/screens/SummaryScreen';
 import { useLanguage } from './LanguageContext';
+import { DownloadBanner } from './components/DownloadBanner';
 
 type Screen =
   | 'matches'
@@ -64,8 +65,7 @@ export function App() {
   const [screen, setScreen] = useState<Screen>('matches');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [editingRoundId, setEditingRoundId] = useState<string | null>(null);
-  const [roundEntryOrigin, setRoundEntryOrigin] =
-    useState<RoundEntryOrigin>('dashboard');
+  const [roundEntryOrigin, setRoundEntryOrigin] = useState<RoundEntryOrigin>('dashboard');
 
   const openMatch = (match: Match) => {
     setSelectedMatch(match);
@@ -230,103 +230,91 @@ export function App() {
     }
   };
 
-  if (screen === 'matches') {
-    return (
-      <MatchListScreen
-        matches={matches}
-        loading={loading}
-        error={error}
-        skipped={skipped}
-        onOpen={openMatch}
-        onNewMatch={() => setScreen('setup')}
-        onRetry={() => void refresh()}
-      />
-    );
-  }
-
-  if (screen === 'setup') {
-    return <SetupScreen onCancel={() => setScreen('matches')} onCreate={createMatch} />;
-  }
-
-  if (!selectedMatch) {
-    return (
-      <MatchListScreen
-        matches={matches}
-        loading={loading}
-        error={error}
-        skipped={skipped}
-        onOpen={openMatch}
-        onNewMatch={() => setScreen('setup')}
-        onRetry={() => void refresh()}
-      />
-    );
-  }
-
-  if (screen === 'dashboard') {
-    return (
-      <DashboardScreen
-        match={selectedMatch}
-        onEnterRound={() => openRoundEntry('dashboard')}
-        onHistory={() => setScreen('history')}
-        onSettings={() => setScreen('settings')}
-        onExport={() => void exportText()}
-        onBack={() => setScreen('matches')}
-      />
-    );
-  }
-
-  if (screen === 'round-entry') {
-    const editedRound = editingRoundId
-      ? selectedMatch.rounds.find((round) => round.id === editingRoundId)
-      : undefined;
-    return (
-      <RoundEntryScreen
-        match={selectedMatch}
-        roundNumber={editedRound?.roundNumber ?? selectedMatch.rounds.length + 1}
-        initialEntries={editedRound?.playerEntries}
-        isEditing={Boolean(editedRound)}
-        onCancel={() => {
-          setEditingRoundId(null);
-          setScreen(roundEntryOrigin);
-        }}
-        onSave={saveRound}
-      />
-    );
-  }
-
-  if (screen === 'history') {
-    return (
-      <HistoryScreen
-        match={selectedMatch}
-        onBack={() => setScreen('dashboard')}
-        onEditRound={(index) => {
-          const round = selectedMatch.rounds[index];
-          if (round) openRoundEntry('history', round.id);
-        }}
-        onUndo={undoLastRound}
-      />
-    );
-  }
-
-  if (screen === 'settings') {
-    return (
-      <SettingsScreen
-        match={selectedMatch}
-        onBack={() => setScreen('dashboard')}
-        onSave={saveSettings}
-        onDelete={deleteSelectedMatch}
-      />
-    );
-  }
-
   return (
-    <SummaryScreen
-      match={selectedMatch}
-      onBack={() => setScreen('dashboard')}
-      onNewMatch={() => setScreen('setup')}
-      onMatchList={() => setScreen('matches')}
-      onExportText={() => void exportText()}
-      onExportCsv={exportCsv}
-    />
+    <div className="app-container">
+      <DownloadBanner
+        onDismiss={() => {}}
+        message="Install Callbreak Scorekeeper to your home screen"
+      />
+      {screen === 'matches' && (
+        <MatchListScreen
+          matches={matches}
+          loading={loading}
+          error={error}
+          skipped={skipped}
+          onOpen={openMatch}
+          onNewMatch={() => setScreen('setup')}
+          onRetry={() => void refresh()}
+        />
+      )}
+      {screen === 'setup' && <SetupScreen onCancel={() => setScreen('matches')} onCreate={createMatch} />}
+      {!selectedMatch && (
+        <MatchListScreen
+          matches={matches}
+          loading={loading}
+          error={error}
+          skipped={skipped}
+          onOpen={openMatch}
+          onNewMatch={() => setScreen('setup')}
+          onRetry={() => void refresh()}
+        />
+      )}
+      {screen === 'dashboard' && selectedMatch && (
+        <DashboardScreen
+          match={selectedMatch}
+          onEnterRound={() => openRoundEntry('dashboard')}
+          onHistory={() => setScreen('history')}
+          onSettings={() => setScreen('settings')}
+          onExport={() => void exportText()}
+          onBack={() => setScreen('matches')}
+        />
+      )}
+      {screen === 'round-entry' && selectedMatch && (
+        <RoundEntryScreen
+          match={selectedMatch}
+          roundNumber={editingRoundId
+            ? selectedMatch.rounds.find((round) => round.id === editingRoundId)?.roundNumber ?? selectedMatch.rounds.length + 1
+            : selectedMatch.rounds.length + 1}
+          initialEntries={editingRoundId
+            ? selectedMatch.rounds.find((round) => round.id === editingRoundId)?.playerEntries
+            : undefined}
+          isEditing={Boolean(editingRoundId)}
+          onCancel={() => {
+            setEditingRoundId(null);
+            setScreen(roundEntryOrigin);
+          }}
+          onSave={saveRound}
+        />
+      )}
+      {screen === 'history' && selectedMatch && (
+        <HistoryScreen
+          match={selectedMatch}
+          onBack={() => setScreen('dashboard')}
+          onEditRound={(index) => {
+            const round = selectedMatch.rounds[index];
+            if (round) openRoundEntry('history', round.id);
+          }}
+          onUndo={undoLastRound}
+        />
+      )}
+      {screen === 'settings' && selectedMatch && (
+        <SettingsScreen
+          match={selectedMatch}
+          onBack={() => setScreen('dashboard')}
+          onSave={saveSettings}
+          onDelete={deleteSelectedMatch}
+        />
+      )}
+      {screen === 'summary' && selectedMatch && (
+        <SummaryScreen
+          match={selectedMatch}
+          onBack={() => setScreen('dashboard')}
+          onNewMatch={() => setScreen('setup')}
+          onMatchList={() => setScreen('matches')}
+          onExportText={() => void exportText()}
+          onExportCsv={exportCsv}
+        />
+      )}
+    </div>
   );
 }
