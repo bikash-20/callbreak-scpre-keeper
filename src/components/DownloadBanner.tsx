@@ -14,9 +14,9 @@ export function DownloadBanner({ onDismiss, message = 'Install Callbreak Scoreke
   const [show, setShow] = useState(true);
   const [installing, setInstalling] = useState(false);
 
-  // Don't show if already installed or unavailable
+  // Don't show if already installed
   useEffect(() => {
-    if (state === 'installed' || state === 'unavailable') {
+    if (state === 'installed') {
       setShow(false);
     }
   }, [state]);
@@ -43,9 +43,15 @@ export function DownloadBanner({ onDismiss, message = 'Install Callbreak Scoreke
     setShow(false);
   };
 
-  if (!show || state === 'installed' || state === 'unavailable') {
+  // Show banner if not installed and not dismissed by user action
+  if (!show || state === 'installed') {
     return null;
   }
+
+  // In dev mode or if no prompt available, still show a manual install message
+  const showInstallButton = state === 'can-install';
+  const showIosMessage = state === 'ios-instructions';
+  const showManualMessage = state === 'unavailable';
 
   return (
     <div className="download-banner" aria-live="polite" role="alert">
@@ -53,15 +59,20 @@ export function DownloadBanner({ onDismiss, message = 'Install Callbreak Scoreke
         <span className="download-banner__icon" aria-hidden="true">📱</span>
         <div className="download-banner__text-group">
           <span className="download-banner__title">{message}</span>
-          {state === 'ios-instructions' && (
+          {showIosMessage && (
             <span className="download-banner__subtitle">
               Tap Share → Add to Home Screen
+            </span>
+          )}
+          {showManualMessage && (
+            <span className="download-banner__subtitle">
+              Use browser menu to install
             </span>
           )}
         </div>
       </div>
       <div className="download-banner__actions">
-        {state === 'can-install' && (
+        {showInstallButton && (
           <button
             className="download-banner__install"
             onClick={handleInstall}
