@@ -1825,3 +1825,41 @@ p {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* --------------------------------------------------------------------------
+   Footer
+   -------------------------------------------------------------------------- */
+
+.app-footer {
+  text-align: center;
+  padding: 24px 16px 32px;
+  margin-top: 40px;
+  font-size: 0.875rem;
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    var(--ink-muted) 0%,
+    var(--ink) 25%,
+    var(--ink-muted) 50%,
+    var(--ink) 75%,
+    var(--ink-muted) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 3s linear infinite;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

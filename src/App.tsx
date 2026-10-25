@@ -304,6 +304,9 @@ export function App() {
           onExportCsv={exportCsv}
         />
       )}
+      <footer className="app-footer">
+        <span className="shimmer-text">Developed by Bikash Talukder</span>
+      </footer>
     </>
   );
 }
