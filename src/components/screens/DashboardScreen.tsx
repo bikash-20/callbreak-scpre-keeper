@@ -105,7 +105,7 @@ export function DashboardScreen({
           <div
             className="notice"
             style={{
-              background: 'rgba(217,182,74,0.14)',
+              background: 'rgba(184,165,248,0.16)',
               color: 'var(--gold)',
               marginBottom: 16,
             }}

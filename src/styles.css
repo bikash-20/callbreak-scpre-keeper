@@ -1,46 +1,55 @@
 /* ==========================================================================
    Callbreak Scorekeeper — global styles
 
-   A "hybrid" visual system: dark charcoal-green surfaces for the dashboard,
-   warm ivory surfaces for score entry and history, muted gold reserved for
-   the current leader, restrained red for negatives and destructive actions.
+   A "hybrid" visual system: deep navy surfaces (#171821 / #242532) for the
+   dashboard, soft lavender-tinted light surfaces (#F5F2FA) for score entry
+   and history, lavender accents for the leader and primary actions, and a
+   restrained red (#D94841) for invalid inputs and destructive actions.
    ========================================================================== */
 
 :root {
-  --forest-deep: #0d261d;
-  --forest: #15342a;
-  --forest-light: #1d4a38;
-  --forest-muted: #3f6b58;
+  --forest-deep: #171821;
+  --forest: #242532;
+  --forest-light: #2e2f3e;
+  --forest-muted: #7c5ce7;
 
-  --gold: #a9801a;
-  --gold-soft: #f0e3bd;
-  --gold-deep: #7a5d0f;
+  --gold: #7c5ce7;
+  --gold-soft: #ebe4fa;
+  --gold-deep: #5f45c9;
 
-  --charcoal: #1c1f1e;
-  --ink: #1a1d1c;
-  --ink-soft: #4a524e;
-  --ink-muted: #78837e;
-  --ink-inverse: #f7f3e8;
+  --charcoal: #171821;
+  --ink: #292637;
+  --ink-soft: #4e4b5e;
+  --ink-muted: #6f6b80;
+  --ink-inverse: #f8f7fc;
 
-  --page-bg: #f4f0e6;
-  --surface-dark: #15342a;
-  --surface-dark-raised: #1d4235;
-  --surface-dark-border: rgba(240, 227, 189, 0.16);
-  --surface-light: #fffdf8;
+  --page-bg: #f5f2fa;
+  --surface-dark: #171821;
+  --surface-dark-raised: #242532;
+  --surface-dark-border: #414052;
+  --surface-light: #ffffff;
   --surface-light-raised: #ffffff;
-  --surface-light-border: #e2dccb;
+  --surface-light-border: #d9d3c7;
 
-  --positive: #1f7a4d;
-  --negative: #b4472e;
-  --negative-soft: #f6e2dc;
+  /* Input border states: default (neutral), focused, invalid.
+     Valid inputs keep the neutral default border — no green. */
+  --input-border: #d9d3c7;
+  --input-border-focus: #8b5cf6;
+  --input-border-invalid: #d94841;
+  --input-focus-soft: rgba(139, 92, 246, 0.22);
+  --input-invalid-soft: rgba(217, 72, 65, 0.18);
+
+  --positive: #7c5ce7;
+  --negative: #d94841;
+  --negative-soft: #f9ded9;
   --warning: #9a6b0b;
   --warning-soft: #fbeed4;
   --info: #2b6a8f;
 
-  --focus-ring: #a9801a;
-  --shadow-sm: 0 1px 2px rgba(21, 52, 42, 0.06);
-  --shadow-md: 0 4px 16px rgba(21, 52, 42, 0.1);
-  --shadow-lg: 0 18px 48px rgba(13, 38, 29, 0.22);
+  --focus-ring: #8b5cf6;
+  --shadow-sm: 0 1px 2px rgba(23, 24, 33, 0.06);
+  --shadow-md: 0 4px 16px rgba(23, 24, 33, 0.1);
+  --shadow-lg: 0 18px 48px rgba(23, 24, 33, 0.22);
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -57,28 +66,35 @@
 }
 
 [data-theme='dark'] {
-  --gold: #d9b64a;
-  --gold-soft: rgba(217, 182, 74, 0.16);
-  --gold-deep: #f0d689;
+  --forest: #1d1e2b;
+  --forest-light: #2b2c3c;
 
-  --ink: #f2eee3;
-  --ink-soft: #c2ccc7;
-  --ink-muted: #8d9a95;
-  --ink-inverse: #12201a;
+  --gold: #b8a5f8;
+  --gold-soft: rgba(184, 165, 248, 0.16);
+  --gold-deep: #cdbcfa;
 
-  --page-bg: #111413;
-  --surface-light: #1a1f1d;
-  --surface-light-raised: #232927;
-  --surface-light-border: #313936;
+  --ink: #f8f7fc;
+  --ink-soft: #bbb8c9;
+  --ink-muted: #827f94;
+  --ink-inverse: #292637;
 
-  --positive: #5fc48c;
-  --negative: #e8836a;
-  --negative-soft: rgba(232, 131, 106, 0.14);
+  --page-bg: #171821;
+  --surface-light: #242532;
+  --surface-light-raised: #2b2c3c;
+  --surface-light-border: #414052;
+
+  --input-border: #414052;
+  --input-focus-soft: rgba(139, 92, 246, 0.3);
+  --input-invalid-soft: rgba(217, 72, 65, 0.28);
+
+  --positive: #b8a5f8;
+  --negative: #ee7b74;
+  --negative-soft: rgba(217, 72, 65, 0.18);
   --warning: #e0b558;
   --warning-soft: rgba(224, 181, 88, 0.14);
   --info: #7fb8d8;
 
-  --focus-ring: #d9b64a;
+  --focus-ring: #8b5cf6;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
   --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.55);
@@ -181,7 +197,7 @@ p {
 
 [data-theme='dark'] .app {
   background:
-    radial-gradient(120% 90% at 50% -10%, rgba(29, 74, 56, 0.35) 0%, transparent 45%),
+    radial-gradient(120% 90% at 50% -10%, rgba(184, 165, 248, 0.06) 0%, transparent 45%),
     var(--page-bg);
 }
 
@@ -403,12 +419,12 @@ p {
 
 .btn--primary {
   background: var(--gold);
-  color: #1a1508;
+  color: #ffffff;
   box-shadow: var(--shadow-sm);
 }
 
 [data-theme='dark'] .btn--primary {
-  color: #241c05;
+  color: #292637;
 }
 
 .btn--primary:hover:not(:disabled) {
@@ -528,7 +544,7 @@ p {
 }
 
 .muted-dark {
-  color: rgba(247, 243, 232, 0.62);
+  color: rgba(248, 247, 252, 0.62);
 }
 
 .num {
@@ -556,7 +572,7 @@ p {
   width: 100%;
   min-height: var(--tap);
   padding: 10px 14px;
-  border: 1px solid var(--surface-light-border);
+  border: 1px solid var(--input-border);
   border-radius: var(--radius-md);
   background: var(--surface-light-raised);
   color: var(--ink);
@@ -569,16 +585,18 @@ p {
 
 .input:focus {
   outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px var(--gold-soft);
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 3px var(--input-focus-soft);
 }
 
+/* Valid inputs keep the neutral default border — no success-green. */
 .input[aria-invalid='true'] {
-  border-color: var(--negative);
+  border-color: var(--input-border-invalid);
 }
 
 .input[aria-invalid='true']:focus {
-  box-shadow: 0 0 0 3px var(--negative-soft);
+  border-color: var(--input-border-invalid);
+  box-shadow: 0 0 0 3px var(--input-invalid-soft);
 }
 
 .field-error {
@@ -669,8 +687,8 @@ p {
 }
 
 .chip[aria-pressed='true'] {
-  background: var(--forest);
-  border-color: var(--forest);
+  background: var(--gold);
+  border-color: var(--gold);
   color: var(--ink-inverse);
 }
 
@@ -721,7 +739,7 @@ p {
 
 .meta-pill--target {
   background: var(--gold-soft);
-  border-color: rgba(217, 182, 74, 0.4);
+  border-color: rgba(184, 165, 248, 0.4);
   color: var(--gold-deep);
 }
 
@@ -751,10 +769,10 @@ p {
 }
 
 .player-card--leader {
-  border-color: rgba(217, 182, 74, 0.55);
+  border-color: rgba(184, 165, 248, 0.55);
   background: linear-gradient(
     180deg,
-    rgba(217, 182, 74, 0.1) 0%,
+    rgba(184, 165, 248, 0.12) 0%,
     var(--surface-dark-raised) 62%
   );
 }
@@ -793,7 +811,7 @@ p {
 
 .player-card--leader .player-card__rank {
   background: var(--gold);
-  color: #1a1508;
+  color: #292637;
 }
 
 .player-card__leader-tag {
@@ -849,12 +867,12 @@ p {
 
 .delta--positive {
   color: var(--positive);
-  background: rgba(95, 196, 140, 0.14);
+  background: rgba(184, 165, 248, 0.14);
 }
 
 .delta--negative {
   color: var(--negative);
-  background: rgba(232, 131, 106, 0.14);
+  background: rgba(217, 72, 65, 0.16);
 }
 
 .delta--flat {
@@ -883,7 +901,7 @@ p {
 .progress__label {
   margin-top: 6px;
   font-size: 0.74rem;
-  color: rgba(247, 243, 232, 0.6);
+  color: rgba(248, 247, 252, 0.6);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1234,7 +1252,7 @@ p {
   text-align: center;
   padding: 34px 20px 30px;
   background:
-    radial-gradient(100% 70% at 50% 0%, rgba(217, 182, 74, 0.16) 0%, transparent 70%),
+    radial-gradient(100% 70% at 50% 0%, rgba(184, 165, 248, 0.16) 0%, transparent 70%),
     linear-gradient(180deg, var(--forest) 0%, var(--forest-deep) 100%);
   color: var(--ink-inverse);
 }
@@ -1268,7 +1286,7 @@ p {
 .winner-hero__target {
   margin-top: 6px;
   font-size: 0.88rem;
-  color: rgba(247, 243, 232, 0.65);
+  color: rgba(248, 247, 252, 0.65);
 }
 
 .winner-hero__crest {
@@ -1280,7 +1298,7 @@ p {
   align-items: center;
   justify-content: center;
   background: var(--gold);
-  color: #1a1508;
+  color: #292637;
 }
 
 .winner-animation {
@@ -1353,7 +1371,7 @@ p {
 
 .standing-row--winner .standing-row__rank {
   background: var(--gold);
-  color: #1a1508;
+  color: #292637;
 }
 
 .standing-row__name {
@@ -1382,7 +1400,7 @@ p {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  background: rgba(8, 20, 16, 0.55);
+  background: rgba(10, 11, 20, 0.6);
   backdrop-filter: blur(3px);
   animation: fade-in 0.18s ease both;
   padding: 0;
@@ -1485,7 +1503,7 @@ p {
   padding: 12px 16px;
   border-radius: var(--radius-md);
   background: var(--charcoal);
-  color: #f7f3e8;
+  color: #f8f7fc;
   box-shadow: var(--shadow-lg);
   font-size: 0.88rem;
   font-weight: 500;
@@ -1560,7 +1578,7 @@ p {
 }
 
 .switch[aria-checked='true'] {
-  background: var(--forest);
+  background: var(--gold);
 }
 
 .switch::after {

@@ -2,23 +2,24 @@
  * Design tokens.
  *
  * A "hybrid" visual system per the product brief:
- * - Dark charcoal-green surfaces for the match dashboard.
- * - Warm ivory surfaces for score entry and history.
- * - Muted gold reserved for the current leader.
- * - A restrained red for negative scores and destructive actions.
+ * - Deep navy surfaces (#171821 / #242532) for the match dashboard and dark mode.
+ * - Soft lavender-tinted light surfaces (#F5F2FA) for score entry and history.
+ * - Primary/deep lavender reserved for leader highlights and primary actions.
+ * - A restrained red (#D94841) for invalid inputs, negative scores and
+ *   destructive actions. Valid inputs stay neutral (default border).
  *
  * Both themes expose identical token names so every component can switch
  * without conditionals.
  */
 
 export interface TokenShape {
-  // Brand greens
+  // Deep navy surfaces (dashboards, dark screens)
   forestDeep: string;
   forest: string;
   forestLight: string;
   forestMuted: string;
 
-  // Accent
+  // Lavender accents (leader, primary actions, focus highlights)
   gold: string;
   goldSoft: string;
   goldDeep: string;
@@ -56,78 +57,82 @@ export interface TokenShape {
 }
 
 export const lightTokens: TokenShape = {
-  forestDeep: '#0d261d',
-  forest: '#15342a',
-  forestLight: '#1d4a38',
-  forestMuted: '#3f6b58',
+  // Dark navy dashboard surfaces (shared by both themes)
+  forestDeep: '#171821',
+  forest: '#242532',
+  forestLight: '#2E2F3E',
+  forestMuted: '#7C5CE7',
 
-  gold: '#a9801a',
-  goldSoft: '#f0e3bd',
-  goldDeep: '#7a5d0f',
+  // Deep lavender accent on light surfaces
+  gold: '#7C5CE7',
+  goldSoft: '#EBE4FA',
+  goldDeep: '#5F45C9',
 
-  charcoal: '#1c1f1e',
-  ink: '#1a1d1c',
-  inkSoft: '#4a524e',
-  inkMuted: '#78837e',
-  inkInverse: '#f7f3e8',
+  // Neutral ramp for light surfaces
+  charcoal: '#171821',
+  ink: '#292637',
+  inkSoft: '#4E4B5E',
+  inkMuted: '#6F6B80',
+  inkInverse: '#F8F7FC',
 
-  pageBg: '#f4f0e6',
+  pageBg: '#F5F2FA',
   pageBgGradient:
-    'radial-gradient(120% 90% at 50% -10%, #ffffff 0%, #f4f0e6 45%, #eae4d6 100%)',
-  surfaceDark: '#15342a',
-  surfaceDarkRaised: '#1d4235',
-  surfaceDarkBorder: 'rgba(240, 227, 189, 0.16)',
-  surfaceLight: '#fffdf8',
-  surfaceLightRaised: '#ffffff',
-  surfaceLightBorder: '#e2dccb',
+    'radial-gradient(120% 90% at 50% -10%, #ffffff 0%, #F5F2FA 45%, #EAE6F4 100%)',
+  surfaceDark: '#171821',
+  surfaceDarkRaised: '#242532',
+  surfaceDarkBorder: '#414052',
+  surfaceLight: '#FFFFFF',
+  surfaceLightRaised: '#FFFFFF',
+  surfaceLightBorder: '#D9D3C7',
 
-  positive: '#1f7a4d',
-  negative: '#b4472e',
-  negativeSoft: '#f6e2dc',
+  positive: '#7C5CE7',
+  negative: '#D94841',
+  negativeSoft: '#F9DED9',
   warning: '#9a6b0b',
   warningSoft: '#fbeed4',
   info: '#2b6a8f',
 
-  focusRing: '#a9801a',
-  shadowSm: '0 1px 2px rgba(21, 52, 42, 0.06)',
-  shadowMd: '0 4px 16px rgba(21, 52, 42, 0.10)',
-  shadowLg: '0 18px 48px rgba(13, 38, 29, 0.22)',
+  focusRing: '#8B5CF6',
+  shadowSm: '0 1px 2px rgba(23, 24, 33, 0.06)',
+  shadowMd: '0 4px 16px rgba(23, 24, 33, 0.10)',
+  shadowLg: '0 18px 48px rgba(23, 24, 33, 0.22)',
 };
 
 export const darkTokens: TokenShape = {
-  forestDeep: '#0a1c15',
-  forest: '#15342a',
-  forestLight: '#1d4a38',
-  forestMuted: '#4b7d67',
+  forestDeep: '#171821',
+  forest: '#1D1E2B',
+  forestLight: '#2B2C3C',
+  forestMuted: '#7C5CE7',
 
-  gold: '#d9b64a',
-  goldSoft: 'rgba(217, 182, 74, 0.16)',
-  goldDeep: '#f0d689',
+  // Primary lavender accent on dark surfaces
+  gold: '#B8A5F8',
+  goldSoft: 'rgba(184, 165, 248, 0.16)',
+  goldDeep: '#CDBCFA',
 
-  charcoal: '#111413',
-  ink: '#f2eee3',
-  inkSoft: '#c2ccc7',
-  inkMuted: '#8d9a95',
-  inkInverse: '#12201a',
+  charcoal: '#171821',
+  ink: '#F8F7FC',
+  inkSoft: '#BBB8C9',
+  inkMuted: '#827F94',
+  inkInverse: '#292637',
 
-  pageBg: '#111413',
+  pageBg: '#171821',
   pageBgGradient:
-    'radial-gradient(120% 90% at 50% -10%, #1b2421 0%, #111413 50%, #0b0e0d 100%)',
-  surfaceDark: '#15342a',
-  surfaceDarkRaised: '#1d4235',
-  surfaceDarkBorder: 'rgba(240, 227, 189, 0.16)',
-  surfaceLight: '#1a1f1d',
-  surfaceLightRaised: '#232927',
-  surfaceLightBorder: '#313936',
+    'radial-gradient(120% 90% at 50% -10%, #242532 0%, #171821 50%, #12131C 100%)',
+  surfaceDark: '#171821',
+  surfaceDarkRaised: '#242532',
+  surfaceDarkBorder: '#414052',
+  surfaceLight: '#242532',
+  surfaceLightRaised: '#2B2C3C',
+  surfaceLightBorder: '#414052',
 
-  positive: '#5fc48c',
-  negative: '#e8836a',
-  negativeSoft: 'rgba(232, 131, 106, 0.14)',
+  positive: '#B8A5F8',
+  negative: '#EE7B74',
+  negativeSoft: 'rgba(217, 72, 65, 0.18)',
   warning: '#e0b558',
   warningSoft: 'rgba(224, 181, 88, 0.14)',
   info: '#7fb8d8',
 
-  focusRing: '#d9b64a',
+  focusRing: '#8B5CF6',
   shadowSm: '0 1px 2px rgba(0, 0, 0, 0.4)',
   shadowMd: '0 4px 16px rgba(0, 0, 0, 0.45)',
   shadowLg: '0 18px 48px rgba(0, 0, 0, 0.55)',
