@@ -693,6 +693,107 @@ p {
     transform: translateY(0);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Install Instructions Modal
+   -------------------------------------------------------------------------- */
+
+.install-instructions {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 20px;
+  animation: fade-in 0.2s ease-out;
+}
+
+.install-instructions__modal {
+  background: var(--surface-light-raised);
+  border-radius: 12px;
+  max-width: 400px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: scale-in 0.2s ease-out;
+}
+
+[data-theme='dark'] .install-instructions__modal {
+  background: var(--surface-dark-raised);
+}
+
+.install-instructions__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--surface-light-border);
+}
+
+[data-theme='dark'] .install-instructions__header {
+  border-bottom-color: var(--surface-dark-border);
+}
+
+.install-instructions__header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.install-instructions__header button {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--ink-muted);
+  padding: 0 8px;
+}
+
+.install-instructions__header button:hover {
+  color: var(--ink);
+}
+
+.install-instructions__content {
+  padding: 20px;
+}
+
+.install-instructions__content p {
+  margin: 0 0 12px;
+  color: var(--ink);
+}
+
+.install-instructions__content ol {
+  margin: 0 0 16px;
+  padding-left: 20px;
+  color: var(--ink);
+}
+
+.install-instructions__content li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { 
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 .muted-dark {
   color: rgba(248, 247, 252, 0.62);
 }

@@ -8,11 +8,12 @@ interface DownloadBannerProps {
   message?: string;
 }
 
-/** PWA download banner - shows install prompt for supported browsers */
+/** PWA download banner - shows install prompt */
 export function DownloadBanner({ onDismiss, message = 'Install Callbreak Scorekeeper' }: DownloadBannerProps) {
   const { state, install, dismiss } = useInstallPrompt();
   const [show, setShow] = useState(true);
   const [installing, setInstalling] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   // Don't show if already installed
   useEffect(() => {
@@ -34,6 +35,11 @@ export function DownloadBanner({ onDismiss, message = 'Install Callbreak Scoreke
       } finally {
         setInstalling(false);
       }
+    } else if (state === 'ios-instructions') {
+      setShowInstructions(true);
+    } else {
+      // For other browsers, show instructions
+      setShowInstructions(true);
     }
   };
 
@@ -43,36 +49,29 @@ export function DownloadBanner({ onDismiss, message = 'Install Callbreak Scoreke
     setShow(false);
   };
 
-  // Show banner if not installed and not dismissed by user action
+  // Always show banner if not installed
   if (!show || state === 'installed') {
     return null;
   }
 
-  // In dev mode or if no prompt available, still show a manual install message
-  const showInstallButton = state === 'can-install';
-  const showIosMessage = state === 'ios-instructions';
-  const showManualMessage = state === 'unavailable';
-
   return (
-    <div className="download-banner" aria-live="polite" role="alert">
-      <div className="download-banner__content">
-        <span className="download-banner__icon" aria-hidden="true">📱</span>
-        <div className="download-banner__text-group">
-          <span className="download-banner__title">{message}</span>
-          {showIosMessage && (
+    <>
+      <div className="download-banner" aria-live="polite" role="alert">
+        <div className="download-banner__content">
+          <span className="download-banner__icon" aria-hidden="true">📱</span>
+          <div className="download-banner__text-group">
+            <span className="download-banner__title">{message}</span>
             <span className="download-banner__subtitle">
-              Tap Share → Add to Home Screen
+              {state === 'ios-instructions' 
+                ? 'Add to your home screen' 
+                : state === 'can-install'
+                ? 'Quick install available'
+                : 'Install as app' 
+              }
             </span>
-          )}
-          {showManualMessage && (
-            <span className="download-banner__subtitle">
-              Use browser menu to install
-            </span>
-          )}
+          </div>
         </div>
-      </div>
-      <div className="download-banner__actions">
-        {showInstallButton && (
+        <div className="download-banner__actions">
           <button
             className="download-banner__install"
             onClick={handleInstall}
@@ -81,15 +80,52 @@ export function DownloadBanner({ onDismiss, message = 'Install Callbreak Scoreke
           >
             {installing ? 'Installing...' : 'Install'}
           </button>
-        )}
-        <button
-          className="download-banner__close"
-          aria-label="Dismiss"
-          onClick={handleDismiss}
-        >
-          ×
-        </button>
+          <button
+            className="download-banner__close"
+            aria-label="Dismiss"
+            onClick={handleDismiss}
+          >
+            ×
+          </button>
+        </div>
       </div>
-    </div>
+      
+      {showInstructions && (
+        <div className="install-instructions" onClick={() => setShowInstructions(false)}>
+          <div className="install-instructions__modal" onClick={(e) => e.stopPropagation()}>
+            <div className="install-instructions__header">
+              <h3>Install App</h3>
+              <button onClick={() => setShowInstructions(false)} aria-label="Close">×</button>
+            </div>
+            <div className="install-instructions__content">
+              {state === 'ios-instructions' ? (
+                <>
+                  <p><strong>On iOS Safari:</strong></p>
+                  <ol>
+                    <li>Tap the Share button <span style={{fontSize: '1.2em'}}>⋮</span></li>
+                    <li>Scroll down and tap "Add to Home Screen"</li>
+                    <li>Tap "Add" in the top right corner</li>
+                  </ol>
+                </>
+              ) : (
+                <>
+                  <p><strong>On Chrome/Edge:</strong></p>
+                  <ol>
+                    <li>Click the menu (3 dots) in the top right</li>
+                    <li>Click "Install Callbreak Scorekeeper..." or "Add to Home screen"</li>
+                    <li>Click "Install"</li>
+                  </ol>
+                  <p><strong>On Firefox:</strong></p>
+                  <ol>
+                    <li>Click the menu (3 lines)</li>
+                    <li>Click "Install" or "Add to Home Screen"</li>
+                  </ol>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
