@@ -231,7 +231,7 @@ export function App() {
   };
 
   return (
-    <div className="app-container">
+    <>
       <DownloadBanner
         onDismiss={() => {}}
         message="Install Callbreak Scorekeeper to your home screen"
@@ -315,6 +315,6 @@ export function App() {
           onExportCsv={exportCsv}
         />
       )}
-    </div>
+    </>
   );
 }
