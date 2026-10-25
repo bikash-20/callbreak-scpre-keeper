@@ -236,7 +236,7 @@ export function App() {
         onDismiss={() => {}}
         message="Install Callbreak Scorekeeper to your home screen"
       />
-      {screen === 'matches' && (
+      {screen === 'matches' && !selectedMatch && (
         <MatchListScreen
           matches={matches}
           loading={loading}
@@ -248,17 +248,6 @@ export function App() {
         />
       )}
       {screen === 'setup' && <SetupScreen onCancel={() => setScreen('matches')} onCreate={createMatch} />}
-      {!selectedMatch && (
-        <MatchListScreen
-          matches={matches}
-          loading={loading}
-          error={error}
-          skipped={skipped}
-          onOpen={openMatch}
-          onNewMatch={() => setScreen('setup')}
-          onRetry={() => void refresh()}
-        />
-      )}
       {screen === 'dashboard' && selectedMatch && (
         <DashboardScreen
           match={selectedMatch}
