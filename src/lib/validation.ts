@@ -49,8 +49,9 @@ export interface ValidationResult {
 function parseWholeNumber(raw: RawInput): number | null {
   const trimmed = raw.trim();
   if (trimmed === '') return null;
-  // Reject "3.5", "abc", "1e2" and other non-integer input.
-  if (!/^\d+$/.test(trimmed)) return null;
+  // Accept optional leading minus sign followed by digits
+  const wholeRe = /^-?\d+$/;
+  if (!wholeRe.test(trimmed)) return null;
   const value = Number(trimmed);
   return Number.isSafeInteger(value) ? value : null;
 }
@@ -58,13 +59,19 @@ function parseWholeNumber(raw: RawInput): number | null {
 /**
  * Validates a single player's bid.
  * Returns an error message, or null when the bid is valid.
+ * Bid may be negative for penalty scenarios (e.g. -6).
  */
 export function validateBid(raw: RawInput): string | null {
   if (raw.trim() === '') return 'Bid is required';
   const value = parseWholeNumber(raw);
   if (value === null) return 'Bid must be a whole number';
-  if (value < MIN_BID || value > MAX_BID) {
+  // Allow negative bids for penalty scenarios; range check when non-negative
+  if (value >= 0 && (value < MIN_BID || value > MAX_BID)) {
     return `Bid must be between ${MIN_BID} and ${MAX_BID}`;
+  }
+  // Negative bids: enforce a reasonable range
+  if (value < -13) {
+    return `Bid must be between -13 and ${MAX_BID}`;
   }
   return null;
 }
@@ -77,6 +84,8 @@ export function validateTricksWon(raw: RawInput): string | null {
   if (raw.trim() === '') return 'Tricks won is required';
   const value = parseWholeNumber(raw);
   if (value === null) return 'Tricks won must be a whole number';
+  // Tricks won must be non-negative 0-13
+  if (value < 0) return 'Tricks won must be a whole number';
   if (value < MIN_TRICKS || value > MAX_TRICKS) {
     return `Tricks won must be between ${MIN_TRICKS} and ${MAX_TRICKS}`;
   }
@@ -85,7 +94,12 @@ export function validateTricksWon(raw: RawInput): string | null {
 
 /** Parses a tricks-won input into a number, or null when invalid. */
 export function parseTricksWon(raw: RawInput): number | null {
-  return parseWholeNumber(raw);
+  // Tricks won must be non-negative 0-13
+  if (raw.trim() === '') return null;
+  const wholeRe = /^\d+$/;
+  if (!wholeRe.test(raw.trim())) return null;
+  const value = Number(raw.trim());
+  return Number.isSafeInteger(value) && value >= 0 && value <= MAX_TRICKS ? value : null;
 }
 
 /** Parses a bid input into a number, or null when invalid. */

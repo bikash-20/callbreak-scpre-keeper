@@ -46,7 +46,13 @@ describe('validateBid', () => {
   it('rejects a non-integer bid', () => {
     expect(validateBid('3.5')).toBe('Bid must be a whole number');
     expect(validateBid('abc')).toBe('Bid must be a whole number');
-    expect(validateBid('-2')).toBe('Bid must be a whole number');
+    // Negative bids like -6 are allowed for penalty scenarios
+    expect(validateBid('-6')).toBeNull();
+    expect(validateBid('-13')).toBeNull();
+    expect(validateBid('-1')).toBeNull();
+    // Out-of-range negatives are rejected
+    expect(validateBid('-14')).toBe('Bid must be between -13 and 13');
+    expect(validateBid('0')).toBe('Bid must be between 1 and 13');
   });
 });
 

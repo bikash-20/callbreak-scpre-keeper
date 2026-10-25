@@ -101,17 +101,36 @@ export function RoundEntryScreen({
   };
 
   const handleChange = (playerId: string, field: 'bid' | 'tricksWon', raw: string) => {
-    // Accept only digits; block anything else at the input.
-    const cleaned = raw.replace(/[^0-9]/g, '').slice(0, 2);
-    setValues((current) => ({
-      ...current,
-      [playerId]: {
-        ...(current[playerId] ?? { bid: '', tricksWon: '' }),
-        [field]: cleaned,
-      },
-    }));
+    // Accept digits and optional leading minus for bids.
+    if (field === 'bid') {
+      // Allow minus sign only as first character, keep digits only
+      let cleaned = raw;
+      if (cleaned.startsWith('-')) {
+        cleaned = '-' + cleaned.slice(1).replace(/[^0-9]/g, '');
+      } else {
+        cleaned = raw.replace(/[^0-9]/g, '');
+      }
+      // Limit to reasonable bid range (1-13 or -1 to -13)
+      if (!/^-?\d+$/.test(cleaned)) cleaned = raw.replace(/[^0-9]/g, '');
+      setValues((current) => ({
+        ...current,
+        [playerId]: {
+          ...(current[playerId] ?? { bid: '', tricksWon: '' }),
+          [field]: cleaned,
+        },
+      }));
+    } else {
+      // tricks-won: accept only digits
+      const cleaned = raw.replace(/[^0-9]/g, '').slice(0, 2);
+      setValues((current) => ({
+        ...current,
+        [playerId]: {
+          ...(current[playerId] ?? { bid: '', tricksWon: '' }),
+          [field]: cleaned,
+        },
+      }));
+    }
   };
-
   const handleSave = async () => {
     if (!validation.valid || saving) return;
     setSaving(true);
@@ -227,7 +246,7 @@ export function RoundEntryScreen({
                       className="input"
                       type="number"
                       inputMode="numeric"
-                      min={1}
+                      min={-13}
                       max={13}
                       step={1}
                       value={values[player.id]?.bid ?? ''}
@@ -236,7 +255,7 @@ export function RoundEntryScreen({
                       }
                       aria-invalid={Boolean(bidIssue)}
                       aria-describedby={bidIssue ? `bid-error-${player.id}` : undefined}
-                      placeholder="0"
+                      placeholder="-6 to 13"
                     />
                     {bidIssue && (
                       <p
