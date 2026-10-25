@@ -261,6 +261,26 @@ export function SettingsScreen({ match, onBack, onSave, onDelete }: SettingsScre
           </button>
         </section>
 
+        <section className="card" style={{ marginBottom: 22 }}>
+          <h2 className="card__title">{t('About')}</h2>
+          <div className="setting-row" style={{ marginBottom: 16 }}>
+            <span className="setting-row__label" style={{ color: 'var(--ink)', fontWeight: 600 }}>
+              Developed by
+            </span>
+            <span className="setting-row__value shimmer" style={{ color: 'var(--gold)', fontFamily: 'inherit', userSelect: 'none' }}>
+              bikash talukder
+            </span>
+          </div>
+          <div className="setting-row" style={{ marginBottom: 16 }}>
+            <span className="setting-row__label" style={{ color: 'var(--ink)', fontWeight: 600 }}>
+              Version
+            </span>
+            <span className="setting-row__value" style={{ color: 'var(--ink-soft)' }}>
+              2.0.0
+            </span>
+          </div>
+        </section>
+
         <button
           type="button"
           className="btn btn--forest btn--lg btn--block"

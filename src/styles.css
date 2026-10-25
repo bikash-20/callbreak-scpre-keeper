@@ -537,10 +537,32 @@ p {
   font-size: 1.05rem;
   font-weight: 650;
   margin-bottom: 12px;
+}  .muted {
+  color: var(--ink-muted);
 }
 
-.muted {
-  color: var(--ink-muted);
+.shimmer {
+  background: linear-gradient(90deg, var(--gold) 0%, var(--gold-soft) 50%, var(--gold) 100% );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.muted-dark {
+  color: rgba(248, 247, 252, 0.62);
 }
 
 .muted-dark {
