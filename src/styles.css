@@ -76,7 +76,7 @@
   --ink: #f8f7fc;
   --ink-soft: #bbb8c9;
   --ink-muted: #827f94;
-  --ink-inverse: #292637;
+  --ink-inverse: #f8f7fc;
 
   --page-bg: #171821;
   --surface-light: #242532;
@@ -731,10 +731,15 @@ p {
   gap: 6px;
   padding: 6px 12px;
   border-radius: 999px;
+  /* Light mode: subtle white tint; Dark mode: faint navy tint */
   background: rgba(255, 255, 255, 0.09);
   border: 1px solid var(--surface-dark-border);
   font-size: 0.82rem;
   font-weight: 600;
+}
+
+[data-theme='dark'] .meta-pill {
+  background: rgba(10, 11, 20, 0.09);
 }
 
 .meta-pill--target {
@@ -867,12 +872,21 @@ p {
 
 .delta--positive {
   color: var(--positive);
+  /* Light mode: subtle lavender tint; Dark mode: visible lavender tint on dark rows */
   background: rgba(184, 165, 248, 0.14);
 }
 
 .delta--negative {
   color: var(--negative);
   background: rgba(217, 72, 65, 0.16);
+}
+
+[data-theme='dark'] .delta--positive {
+  background: rgba(184, 165, 248, 0.22);
+}
+
+[data-theme='dark'] .delta--negative {
+  background: rgba(217, 72, 65, 0.22);
 }
 
 .delta--flat {
@@ -887,8 +901,13 @@ p {
 .progress__track {
   height: 6px;
   border-radius: 999px;
+  /* Light mode: subtle white overlay; Dark mode: faint lavender overlay */
   background: rgba(255, 255, 255, 0.12);
   overflow: hidden;
+}
+
+[data-theme='dark'] .progress__track {
+  background: rgba(184, 165, 248, 0.18);
 }
 
 .progress__fill {
@@ -1657,8 +1676,14 @@ p {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Light mode: ivory border; Dark mode: muted lavender border */
   background: var(--surface-light-border);
   color: var(--ink-muted);
+}
+
+[data-theme='dark'] .empty-state__icon {
+  background: rgba(184, 165, 248, 0.12);
+  color: #f8f7fc;
 }
 
 .empty-state__title {
