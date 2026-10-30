@@ -3,8 +3,11 @@ import { Modal } from './Modal';
 import { useLanguage } from '../LanguageContext';
 
 interface ConfirmDialogProps {
+  /** If provided and false, dialog will not render */
+  open?: boolean;
   title: string;
-  body: React.ReactNode;
+  body?: React.ReactNode;
+  message?: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   /** Renders the confirm button in the destructive style. */
@@ -14,12 +17,13 @@ interface ConfirmDialogProps {
 }
 
 /**
- * A confirmation dialog. The confirm action may be async; the button is
- * disabled while it runs so a double tap cannot fire it twice.
+ * A robust confirmation dialog supporting both conditional render and `open` flag.
  */
 export function ConfirmDialog({
+  open = true,
   title,
   body,
+  message,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   destructive = false,
@@ -28,6 +32,8 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
+
+  if (!open) return null;
 
   const handleConfirm = async () => {
     if (busy) return;
@@ -38,6 +44,8 @@ export function ConfirmDialog({
       setBusy(false);
     }
   };
+
+  const content = body ?? message;
 
   return (
     <Modal
@@ -64,7 +72,7 @@ export function ConfirmDialog({
         </>
       }
     >
-      {body}
+      {content}
     </Modal>
   );
 }

@@ -1,9 +1,14 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, TriangleAlert } from 'lucide-react';
-import type { Match, PlayerRoundEntry } from '../../types/match';
 import {
-  calculateRoundScore,
-} from '../../lib/scoring';
+  ArrowLeft,
+  Check,
+  Minus,
+  Plus,
+  Sparkles,
+  TriangleAlert,
+} from 'lucide-react';
+import type { Match, PlayerRoundEntry } from '../../types/match';
+import { calculateRoundScore } from '../../lib/scoring';
 import {
   parseBid,
   parseTricksWon,
@@ -25,12 +30,11 @@ interface RoundEntryScreenProps {
   onSave: (entries: PlayerRoundEntry[]) => Promise<void>;
 }
 
+const COMMON_BIDS = [1, 2, 3, 4, 5, 6, 7, 8];
+
 /**
- * Round entry — all four players on one screen with live score previews.
- *
- * Nothing is computed until it is valid, and the user's inputs are never
- * modified behind their back: invalid values are reported and the round
- * cannot be saved.
+ * Mobile-first round entry with rapid-stepper controls, one-tap "Made" shortcuts,
+ * and live score previews.
  */
 export function RoundEntryScreen({
   match,
@@ -60,6 +64,9 @@ export function RoundEntryScreen({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // In Callbreak, dealer rotates clockwise each round
+  const dealerSeatIndex = (roundNumber - 1) % 4;
+
   const inputs: PlayerInput[] = useMemo(
     () =>
       match.players.map((player) => ({
@@ -83,7 +90,9 @@ export function RoundEntryScreen({
   const expectedTotal = match.expectedTrickTotal;
   const totalTricks = validation.totalTricks;
   const totalIsExact = totalTricks === expectedTotal;
-  const totalProgress = expectedTotal > 0 ? Math.min(100, (totalTricks / expectedTotal) * 100) : 0;
+  const totalProgress =
+    expectedTotal > 0 ? Math.min(100, (totalTricks / expectedTotal) * 100) : 0;
+  const trickDiff = totalTricks - expectedTotal;
 
   const issueFor = (playerId: string, field: 'bid' | 'tricksWon') =>
     validation.fieldIssues.find(
@@ -100,17 +109,18 @@ export function RoundEntryScreen({
     return calculateRoundScore(bid, tricks);
   };
 
-  const handleChange = (playerId: string, field: 'bid' | 'tricksWon', raw: string) => {
-    // Accept digits and optional leading minus for bids.
+  const handleChange = (
+    playerId: string,
+    field: 'bid' | 'tricksWon',
+    raw: string,
+  ) => {
     if (field === 'bid') {
-      // Allow minus sign only as first character, keep digits only
       let cleaned = raw;
       if (cleaned.startsWith('-')) {
         cleaned = '-' + cleaned.slice(1).replace(/[^0-9]/g, '');
       } else {
         cleaned = raw.replace(/[^0-9]/g, '');
       }
-      // Limit to reasonable bid range (1-13 or -1 to -13)
       if (!/^-?\d+$/.test(cleaned)) cleaned = raw.replace(/[^0-9]/g, '');
       setValues((current) => ({
         ...current,
@@ -120,7 +130,6 @@ export function RoundEntryScreen({
         },
       }));
     } else {
-      // tricks-won: accept only digits
       const cleaned = raw.replace(/[^0-9]/g, '').slice(0, 2);
       setValues((current) => ({
         ...current,
@@ -131,6 +140,36 @@ export function RoundEntryScreen({
       }));
     }
   };
+
+  const stepBid = (playerId: string, delta: number) => {
+    const current = parseBid(values[playerId]?.bid ?? '');
+    let nextVal: number;
+    if (current === null) {
+      nextVal = delta > 0 ? 1 : 1;
+    } else {
+      nextVal = Math.min(13, Math.max(1, current + delta));
+    }
+    handleChange(playerId, 'bid', String(nextVal));
+  };
+
+  const stepTricks = (playerId: string, delta: number) => {
+    const current = parseTricksWon(values[playerId]?.tricksWon ?? '');
+    let nextVal: number;
+    if (current === null) {
+      nextVal = delta > 0 ? 0 : 0;
+    } else {
+      nextVal = Math.min(13, Math.max(0, current + delta));
+    }
+    handleChange(playerId, 'tricksWon', String(nextVal));
+  };
+
+  const setTricksToBid = (playerId: string) => {
+    const bid = parseBid(values[playerId]?.bid ?? '');
+    if (bid !== null && bid >= 0) {
+      handleChange(playerId, 'tricksWon', String(bid));
+    }
+  };
+
   const handleSave = async () => {
     if (!validation.valid || saving) return;
     setSaving(true);
@@ -188,7 +227,9 @@ export function RoundEntryScreen({
 
         {isEditing && (
           <div className="notice notice--info" style={{ marginBottom: 16 }}>
-            {t('Editing this round recalculates every later round, the standings and the result.')}
+            {t(
+              'Editing this round recalculates every later round, the standings and the result.',
+            )}
           </div>
         )}
 
@@ -198,18 +239,33 @@ export function RoundEntryScreen({
             const bidIssue = issueFor(player.id, 'bid');
             const tricksIssue = issueFor(player.id, 'tricksWon');
             const rowInvalid = Boolean(bidIssue || tricksIssue);
+            const isDealer = player.seatIndex === dealerSeatIndex;
+            const currentBid = values[player.id]?.bid ?? '';
+            const currentTricks = values[player.id]?.tricksWon ?? '';
+            const bidNum = parseBid(currentBid);
+            const tricksNum = parseTricksWon(currentTricks);
 
             return (
               <section
                 key={player.id}
-                className={`entry-row${rowInvalid ? ' entry-row--invalid' : ''}`}
+                className={`entry-row${rowInvalid ? ' entry-row--invalid' : ''}${
+                  isDealer ? ' entry-row--dealer' : ''
+                }`}
                 aria-label={`${player.name} ${t('bid and tricks won')}`}
               >
                 <div className="entry-row__head">
                   <span className="player-seat" aria-hidden="true">
                     {number(player.seatIndex + 1)}
                   </span>
-                  <span className="entry-row__name">{player.name}</span>
+                  <div className="entry-row__player-meta">
+                    <span className="entry-row__name">{player.name}</span>
+                    {isDealer && (
+                      <span className="dealer-badge" title={t('Dealer for this round')}>
+                        <Sparkles size={11} aria-hidden="true" />
+                        <span>{t('Dealer')}</span>
+                      </span>
+                    )}
+                  </div>
                   <span
                     className={`entry-row__score${
                       preview === null
@@ -229,11 +285,14 @@ export function RoundEntryScreen({
                           })
                     }
                   >
-                    {preview === null ? '—' : formatSignedScoreValue(preview, language)}
+                    {preview === null
+                      ? '—'
+                      : formatSignedScoreValue(preview, language)}
                   </span>
                 </div>
 
                 <div className="entry-row__inputs">
+                  {/* BID INPUT WITH STEPPER */}
                   <div className="entry-input">
                     <label
                       className="entry-input__label"
@@ -241,22 +300,64 @@ export function RoundEntryScreen({
                     >
                       {t('Bid')}
                     </label>
-                    <input
-                      id={`bid-${player.id}`}
-                      className="input"
-                      type="number"
-                      inputMode="numeric"
-                      min={-13}
-                      max={13}
-                      step={1}
-                      value={values[player.id]?.bid ?? ''}
-                      onChange={(event) =>
-                        handleChange(player.id, 'bid', event.target.value)
-                      }
-                      aria-invalid={Boolean(bidIssue)}
-                      aria-describedby={bidIssue ? `bid-error-${player.id}` : undefined}
-                      placeholder="-6 to 13"
-                    />
+                    <div className="stepper-wrap">
+                      <button
+                        type="button"
+                        className="stepper-btn"
+                        onClick={() => stepBid(player.id, -1)}
+                        disabled={bidNum !== null && bidNum <= 1}
+                        aria-label={`${player.name} -1 bid`}
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <input
+                        id={`bid-${player.id}`}
+                        className="input stepper-input"
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={13}
+                        step={1}
+                        value={currentBid}
+                        onChange={(event) =>
+                          handleChange(player.id, 'bid', event.target.value)
+                        }
+                        aria-invalid={Boolean(bidIssue)}
+                        aria-describedby={
+                          bidIssue ? `bid-error-${player.id}` : undefined
+                        }
+                        placeholder="1-13"
+                      />
+                      <button
+                        type="button"
+                        className="stepper-btn"
+                        onClick={() => stepBid(player.id, 1)}
+                        disabled={bidNum !== null && bidNum >= 13}
+                        aria-label={`${player.name} +1 bid`}
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+
+                    {/* Quick bid selection chips */}
+                    <div className="quick-chip-row" aria-label="Quick bid selection">
+                      {COMMON_BIDS.map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`chip-xs ${
+                            currentBid === String(n) ? 'chip-xs--active' : ''
+                          }`}
+                          onClick={() =>
+                            handleChange(player.id, 'bid', String(n))
+                          }
+                          aria-label={`Bid ${n}`}
+                        >
+                          {number(n)}
+                        </button>
+                      ))}
+                    </div>
+
                     {bidIssue && (
                       <p
                         id={`bid-error-${player.id}`}
@@ -269,31 +370,89 @@ export function RoundEntryScreen({
                     )}
                   </div>
 
+                  {/* TRICKS WON INPUT WITH STEPPER */}
                   <div className="entry-input">
-                    <label
-                      className="entry-input__label"
-                      htmlFor={`tricks-${player.id}`}
-                    >
-                      {t('Won')}
-                    </label>
-                    <input
-                      id={`tricks-${player.id}`}
-                      className="input"
-                      type="number"
-                      inputMode="numeric"
-                      min={0}
-                      max={13}
-                      step={1}
-                      value={values[player.id]?.tricksWon ?? ''}
-                      onChange={(event) =>
-                        handleChange(player.id, 'tricksWon', event.target.value)
-                      }
-                      aria-invalid={Boolean(tricksIssue)}
-                      aria-describedby={
-                        tricksIssue ? `tricks-error-${player.id}` : undefined
-                      }
-                      placeholder="0"
-                    />
+                    <div className="entry-input__label-row">
+                      <label
+                        className="entry-input__label"
+                        htmlFor={`tricks-${player.id}`}
+                      >
+                        {t('Won')}
+                      </label>
+                      {bidNum !== null && bidNum > 0 && (
+                        <button
+                          type="button"
+                          className={`chip-mini ${
+                            tricksNum === bidNum ? 'chip-mini--active' : ''
+                          }`}
+                          onClick={() => setTricksToBid(player.id)}
+                          title={t('Tap to set tricks won equal to bid')}
+                        >
+                          <Check size={11} aria-hidden="true" />
+                          <span>
+                            {t('Made')} ({number(bidNum)})
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="stepper-wrap">
+                      <button
+                        type="button"
+                        className="stepper-btn"
+                        onClick={() => stepTricks(player.id, -1)}
+                        disabled={tricksNum !== null && tricksNum <= 0}
+                        aria-label={`${player.name} -1 trick won`}
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <input
+                        id={`tricks-${player.id}`}
+                        className="input stepper-input"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={13}
+                        step={1}
+                        value={currentTricks}
+                        onChange={(event) =>
+                          handleChange(player.id, 'tricksWon', event.target.value)
+                        }
+                        aria-invalid={Boolean(tricksIssue)}
+                        aria-describedby={
+                          tricksIssue ? `tricks-error-${player.id}` : undefined
+                        }
+                        placeholder="0"
+                      />
+                      <button
+                        type="button"
+                        className="stepper-btn"
+                        onClick={() => stepTricks(player.id, 1)}
+                        disabled={tricksNum !== null && tricksNum >= 13}
+                        aria-label={`${player.name} +1 trick won`}
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+
+                    {/* Quick tricks chips */}
+                    <div className="quick-chip-row" aria-label="Quick tricks selection">
+                      {[0, 1, 2, 3, 4, 5, 6, 7].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          className={`chip-xs ${
+                            currentTricks === String(n) ? 'chip-xs--active' : ''
+                          }`}
+                          onClick={() =>
+                            handleChange(player.id, 'tricksWon', String(n))
+                          }
+                          aria-label={`Won ${n} tricks`}
+                        >
+                          {number(n)}
+                        </button>
+                      ))}
+                    </div>
+
                     {tricksIssue && (
                       <p
                         id={`tricks-error-${player.id}`}
@@ -311,6 +470,7 @@ export function RoundEntryScreen({
           })}
         </div>
 
+        {/* STICKY TOTAL BAR */}
         <div className="total-bar">
           <div className="total-bar__head">
             <div>
@@ -318,16 +478,36 @@ export function RoundEntryScreen({
                 {t('Total tricks won')}
               </span>
               <span
-                className={`total-bar__count ${totalIsExact ? 'total-bar__count--ok' : 'total-bar__count--bad'}`}
+                className={`total-bar__count ${
+                  totalIsExact ? 'total-bar__count--ok' : 'total-bar__count--bad'
+                }`}
                 aria-live="polite"
               >
                 {number(totalTricks)} / {number(expectedTotal)}
+                {!totalIsExact && validation.fieldsValid && totalTricks > 0 && (
+                  <span className="total-bar__diff">
+                    ({trickDiff > 0 ? `+${number(trickDiff)} ${t('over')}` : `${number(Math.abs(trickDiff))} ${t('remaining')}`})
+                  </span>
+                )}
               </span>
             </div>
             {validation.totalIssue && (
-              <span className="field-error" style={{ marginTop: 0, maxWidth: '58%' }} role="alert">
+              <span
+                className="field-error"
+                style={{ marginTop: 0, maxWidth: '58%', fontSize: '0.8rem' }}
+                role="alert"
+              >
                 <TriangleAlert size={14} />
                 {t(validation.totalIssue)}
+              </span>
+            )}
+            {totalIsExact && (
+              <span className="badge-exact" role="status">
+                <Check size={14} />
+                {t('Exact total ({{total}}/{{expected}})', {
+                  total: number(totalTricks),
+                  expected: number(expectedTotal),
+                })}
               </span>
             )}
           </div>
@@ -341,7 +521,9 @@ export function RoundEntryScreen({
             aria-label={t('Total tricks won this round')}
           >
             <div
-              className={`total-bar__fill ${totalIsExact ? 'total-bar__fill--ok' : 'total-bar__fill--bad'}`}
+              className={`total-bar__fill ${
+                totalIsExact ? 'total-bar__fill--ok' : 'total-bar__fill--bad'
+              }`}
               style={{ width: `${totalProgress}%` }}
             />
           </div>

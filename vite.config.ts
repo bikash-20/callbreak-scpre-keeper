@@ -25,8 +25,8 @@ export default defineConfig({
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',
-        theme_color: '#15342a',
-        background_color: '#f7f3e8',
+        theme_color: '#171821',
+        background_color: '#171821',
         categories: ['games', 'utilities', 'productivity'],
         icons: [
           {
@@ -56,7 +56,7 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
       devOptions: {
-        enabled: false,
+        enabled: true,
       },
     }),
   ],

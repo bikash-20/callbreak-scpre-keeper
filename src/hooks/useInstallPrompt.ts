@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-interface BeforeInstallPromptEvent extends Event {
+export interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
@@ -11,15 +11,42 @@ export type InstallState =
   | 'ios-instructions'
   | 'unavailable';
 
-export interface UseInstallPromptResult {
-  state: InstallState;
-  /** Triggers the native install prompt. Returns false if unavailable. */
-  install: () => Promise<boolean>;
-  dismiss: () => void;
-  dismissed: boolean;
+export const BANNER_STORAGE_KEY = 'cb_pwa_banner_dismissed';
+
+let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
+const promptListeners = new Set<() => void>();
+
+function notifyListeners() {
+  for (const listener of promptListeners) {
+    try {
+      listener();
+    } catch {
+      // ignore callback error
+    }
+  }
 }
 
-function isStandalone(): boolean {
+// Global capture so we never miss beforeinstallprompt if it fires before React mount
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (event) => {
+    // Prevent the mini-infobar on mobile
+    event.preventDefault();
+    globalDeferredPrompt = event as BeforeInstallPromptEvent;
+    notifyListeners();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    globalDeferredPrompt = null;
+    try {
+      localStorage.setItem(BANNER_STORAGE_KEY, 'true');
+    } catch {
+      // ignore storage error
+    }
+    notifyListeners();
+  });
+}
+
+export function isStandalone(): boolean {
   if (typeof window === 'undefined') return false;
   const iosStandalone = (
     window.navigator as Navigator & { standalone?: boolean }
@@ -30,7 +57,7 @@ function isStandalone(): boolean {
   );
 }
 
-function isIos(): boolean {
+export function isIos(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
   return (
@@ -39,56 +66,102 @@ function isIos(): boolean {
   );
 }
 
-/**
- * Handles PWA installation.
- *
- * Chromium browsers fire `beforeinstallprompt`, which we capture so we can
- * offer our own Install button. iOS Safari never fires that event, so there
- * we show "Add to Home Screen" instructions instead.
- */
+export interface UseInstallPromptResult {
+  state: InstallState;
+  /** Triggers the native install prompt. Returns true if accepted, false otherwise. */
+  install: () => Promise<boolean>;
+  dismiss: () => void;
+  showBanner: () => void;
+  dismissed: boolean;
+  isStandalone: boolean;
+}
+
 export function useInstallPrompt(): UseInstallPromptResult {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(
-    null,
+  const [promptAvailable, setPromptAvailable] = useState<boolean>(() =>
+    Boolean(globalDeferredPrompt),
   );
-  const [dismissed, setDismissed] = useState(false);
+  const [standalone, setStandalone] = useState<boolean>(isStandalone);
+  const [dismissed, setDismissedState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(BANNER_STORAGE_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
-    if (isStandalone()) return;
-
-    const onBeforeInstallPrompt = (event: Event) => {
-      event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
-    };
-    const onAppInstalled = () => {
-      setDeferredPrompt(null);
+    const handlePromptChange = () => {
+      setPromptAvailable(Boolean(globalDeferredPrompt));
+      setStandalone(isStandalone());
     };
 
-    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-    window.addEventListener('appinstalled', onAppInstalled);
+    promptListeners.add(handlePromptChange);
+
+    const mediaQuery = window.matchMedia?.('(display-mode: standalone)');
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      setStandalone(e.matches);
+    };
+    mediaQuery?.addEventListener?.('change', handleMediaChange);
+
     return () => {
-      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', onAppInstalled);
+      promptListeners.delete(handlePromptChange);
+      mediaQuery?.removeEventListener?.('change', handleMediaChange);
     };
   }, []);
 
-  const install = useCallback(async () => {
-    if (!deferredPrompt) return false;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    setDeferredPrompt(null);
-    return outcome === 'accepted';
-  }, [deferredPrompt]);
+  const dismiss = useCallback(() => {
+    setDismissedState(true);
+    try {
+      localStorage.setItem(BANNER_STORAGE_KEY, 'true');
+    } catch {
+      // ignore storage error
+    }
+  }, []);
 
-  const dismiss = useCallback(() => setDismissed(true), []);
+  const showBanner = useCallback(() => {
+    setDismissedState(false);
+    try {
+      localStorage.setItem(BANNER_STORAGE_KEY, 'false');
+    } catch {
+      // ignore storage error
+    }
+  }, []);
+
+  const install = useCallback(async (): Promise<boolean> => {
+    if (!globalDeferredPrompt) {
+      return false;
+    }
+    try {
+      await globalDeferredPrompt.prompt();
+      const { outcome } = await globalDeferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        globalDeferredPrompt = null;
+        setPromptAvailable(false);
+        dismiss();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('PWA install prompt execution error:', err);
+      return false;
+    }
+  }, [dismiss]);
 
   let state: InstallState = 'unavailable';
-  if (isStandalone()) {
+  if (standalone) {
     state = 'installed';
-  } else if (deferredPrompt) {
+  } else if (promptAvailable) {
     state = 'can-install';
   } else if (isIos()) {
     state = 'ios-instructions';
   }
 
-  return { state, install, dismiss, dismissed };
+  return {
+    state,
+    install,
+    dismiss,
+    showBanner,
+    dismissed,
+    isStandalone: standalone,
+  };
 }

@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Check, TriangleAlert } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  RotateCw,
+  Shuffle,
+  TriangleAlert,
+} from 'lucide-react';
 import type { Match, Player } from '../../types/match';
 import { PLAYER_COUNT, SCHEMA_VERSION } from '../../types/match';
 import {
@@ -17,8 +23,8 @@ interface SetupScreenProps {
 }
 
 /**
- * Match setup: four editable player names, a target score (preset or custom)
- * and an optional match name.
+ * Match setup: four editable player names with seat rotation, target score presets,
+ * and custom target score input.
  */
 export function SetupScreen({ onCancel, onCreate }: SetupScreenProps) {
   const { language, t, number } = useLanguage();
@@ -40,21 +46,37 @@ export function SetupScreen({ onCancel, onCreate }: SetupScreenProps) {
   );
 
   const nameIssues = useMemo(
-    () => validatePlayerNames(players.map((p) => ({ id: p.id, name: p.name }))),
+    () =>
+      validatePlayerNames(players.map((p) => ({ id: p.id, name: p.name }))),
     [players],
   );
 
   const hasEmptyName = Object.values(nameIssues).some(
     (issue) => issue === 'Name is required',
   );
-  const hasDuplicateName = Object.values(nameIssues).some(
-    (issue) => issue === 'Duplicate player name',
-  );
 
-  const targetValue = targetPreset !== null ? String(targetPreset) : customTarget;
+  const targetValue =
+    targetPreset !== null ? String(targetPreset) : customTarget;
   const targetError = validateTargetScore(targetValue);
 
   const canSubmit = !hasEmptyName && !targetError && !submitting;
+
+  const handleRotateSeats = () => {
+    setNames(([a, b, c, d]) => [b ?? '', c ?? '', d ?? '', a ?? '']);
+  };
+
+  const handleShuffleSeats = () => {
+    setNames((prev) => {
+      const copy = [...prev];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = copy[i]!;
+        copy[i] = copy[j]!;
+        copy[j] = temp;
+      }
+      return copy;
+    });
+  };
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -65,7 +87,11 @@ export function SetupScreen({ onCancel, onCreate }: SetupScreenProps) {
       const finalTarget = Number(targetValue);
       const match: Match = {
         id: `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
-        name: matchName.trim() || `${t('Match')} ${new Date().toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US')}`,
+        name:
+          matchName.trim() ||
+          `${t('Match')} ${new Date().toLocaleDateString(
+            language === 'bn' ? 'bn-BD' : 'en-US',
+          )}`,
         players,
         targetScore: finalTarget,
         scoringMode: 'standard',
@@ -111,9 +137,35 @@ export function SetupScreen({ onCancel, onCreate }: SetupScreenProps) {
           </div>
         )}
 
+        {/* PLAYERS CARD */}
         <section className="card" style={{ marginBottom: 18 }}>
-          <h2 className="card__title">{t('Players')}</h2>
-          <div className="setup-grid">
+          <div className="card-header-actions">
+            <h2 className="card__title" style={{ margin: 0 }}>
+              {t('Players')}
+            </h2>
+            <div className="chip-row">
+              <button
+                type="button"
+                className="btn-tiny"
+                onClick={handleRotateSeats}
+                title={t('Rotate Seats')}
+              >
+                <RotateCw size={13} />
+                <span>{t('Rotate Seats')}</span>
+              </button>
+              <button
+                type="button"
+                className="btn-tiny"
+                onClick={handleShuffleSeats}
+                title={t('Shuffle Seats')}
+              >
+                <Shuffle size={13} />
+                <span>{t('Shuffle Seats')}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="setup-grid" style={{ marginTop: 14 }}>
             {names.map((name, index) => {
               const issue = nameIssues[`p${index + 1}`];
               const isError = issue === 'Name is required';
@@ -128,6 +180,11 @@ export function SetupScreen({ onCancel, onCreate }: SetupScreenProps) {
                       {number(index + 1)}
                     </span>
                     {t('Player {{number}}', { number: number(index + 1) })}
+                    {index === 0 && (
+                      <span className="first-dealer-pill">
+                        {t('Round 1 Dealer')}
+                      </span>
+                    )}
                   </label>
                   <input
                     id={`player-${index}`}
@@ -151,7 +208,7 @@ export function SetupScreen({ onCancel, onCreate }: SetupScreenProps) {
                       id={`player-${index}-issue`}
                       className={isError ? 'field-error' : 'field-warning'}
                     >
-                      {isError ? <TriangleAlert size={14} /> : <TriangleAlert size={14} />}
+                      <TriangleAlert size={14} />
                       {t(issue)}
                     </p>
                   )}
@@ -159,80 +216,85 @@ export function SetupScreen({ onCancel, onCreate }: SetupScreenProps) {
               );
             })}
           </div>
-          {hasDuplicateName && (
-            <p
-              className="field-warning"
-              style={{ marginTop: 12 }}
-              role="status"
-            >
-              <TriangleAlert size={14} />
-              {t('Two players share a name. You can continue, but check it is not a typo.')}
-            </p>
-          )}
         </section>
 
+        {/* TARGET SCORE CARD */}
         <section className="card" style={{ marginBottom: 18 }}>
           <h2 className="card__title">{t('Target Score')}</h2>
           <div className="target-options">
-            {TARGET_PRESETS.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                className="chip"
-                aria-pressed={targetPreset === preset}
-                onClick={() => {
-                  setTargetPreset(preset);
-                  setCustomTarget('');
-                }}
-              >
-                {targetPreset === preset && <Check size={14} aria-hidden="true" />}
-                {number(preset)}
-              </button>
-            ))}
+            {TARGET_PRESETS.map((preset) => {
+              const selected = targetPreset === preset;
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  className="chip"
+                  aria-pressed={selected}
+                  onClick={() => {
+                    setTargetPreset(preset);
+                    setCustomTarget('');
+                  }}
+                >
+                  {selected && (
+                    <Check
+                      size={15}
+                      style={{ verticalAlign: 'middle', marginRight: 4 }}
+                    />
+                  )}
+                  {number(preset)} {t('points')}
+                </button>
+              );
+            })}
             <button
               type="button"
               className="chip"
               aria-pressed={targetPreset === null}
               onClick={() => {
                 setTargetPreset(null);
-                setCustomTarget('');
+                setCustomTarget('75');
               }}
             >
-              {targetPreset === null && <Check size={14} aria-hidden="true" />}
+              {targetPreset === null && (
+                <Check
+                  size={15}
+                  style={{ verticalAlign: 'middle', marginRight: 4 }}
+                />
+              )}
               {t('Custom')}
             </button>
           </div>
 
-          <div className="field" style={{ marginBottom: 0 }}>
-            <label className="label" htmlFor="target-score">
-              {t('Target score (points)')}
-            </label>
-            <input
-              id="target-score"
-              className="input num"
-              type="number"
-              inputMode="numeric"
-              min={1}
-              step={1}
-              value={targetValue}
-              disabled={targetPreset !== null}
-              onChange={(event) => {
-                setTargetPreset(null);
-                setCustomTarget(event.target.value);
-              }}
-              aria-invalid={Boolean(targetError)}
-              aria-describedby={targetError ? 'target-error' : undefined}
-            />
-            {targetError && (
-              <p id="target-error" className="field-error" role="alert">
-                <TriangleAlert size={14} />
-                {t(targetError)}
-              </p>
-            )}
-          </div>
+          {targetPreset === null && (
+            <div className="field" style={{ marginTop: 12, marginBottom: 0 }}>
+              <label className="label" htmlFor="custom-target">
+                {t('Target score (points)')}
+              </label>
+              <input
+                id="custom-target"
+                className="input num"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={1}
+                value={customTarget}
+                onChange={(event) => setCustomTarget(event.target.value)}
+                aria-invalid={Boolean(targetError)}
+                aria-describedby={
+                  targetError ? 'custom-target-error' : undefined
+                }
+              />
+              {targetError && (
+                <p id="custom-target-error" className="field-error" role="alert">
+                  <TriangleAlert size={14} />
+                  {t(targetError)}
+                </p>
+              )}
+            </div>
+          )}
         </section>
 
-        <section className="card" style={{ marginBottom: 22 }}>
+        {/* OPTIONAL MATCH NAME CARD */}
+        <section className="card" style={{ marginBottom: 24 }}>
           <h2 className="card__title">{t('Match name (optional)')}</h2>
           <div className="field" style={{ marginBottom: 0 }}>
             <label className="label" htmlFor="match-name">
@@ -242,9 +304,11 @@ export function SetupScreen({ onCancel, onCreate }: SetupScreenProps) {
               id="match-name"
               className="input"
               type="text"
+              placeholder={`${t('Match')} ${new Date().toLocaleDateString(
+                language === 'bn' ? 'bn-BD' : 'en-US',
+              )}`}
               value={matchName}
               maxLength={48}
-              placeholder={`${t('Match')} ${new Date().toLocaleDateString(language === 'bn' ? 'bn-BD' : 'en-US')}`}
               onChange={(event) => setMatchName(event.target.value)}
             />
           </div>
@@ -259,8 +323,13 @@ export function SetupScreen({ onCancel, onCreate }: SetupScreenProps) {
           {submitting ? t('Starting…') : t('Start Match')}
         </button>
 
-        <p className="muted" style={{ fontSize: '0.8rem', marginTop: 14, textAlign: 'center' }}>
-          {t('Matches are saved on this device only. Clearing browser data will erase them.')}
+        <p
+          className="muted text-center"
+          style={{ fontSize: '0.8rem', marginTop: 18 }}
+        >
+          {t(
+            'Matches are saved on this device only. Clearing browser data will erase them.',
+          )}
         </p>
       </main>
     </div>

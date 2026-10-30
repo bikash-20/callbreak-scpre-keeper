@@ -233,8 +233,8 @@ export function App() {
   return (
     <>
       <DownloadBanner
+        disabled={screen === 'round-entry'}
         onDismiss={() => {}}
-        message="Install Callbreak Scorekeeper to your home screen"
       />
       {screen === 'matches' && !selectedMatch && (
         <MatchListScreen

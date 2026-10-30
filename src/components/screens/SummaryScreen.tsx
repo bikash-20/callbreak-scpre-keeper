@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import {
   ArrowLeft,
   FileText,
+  Plus,
   Share2,
   Table2,
   Trophy,
@@ -22,8 +23,8 @@ interface SummaryScreenProps {
 }
 
 /**
- * The end-of-match summary: winner or tie, final standings, totals and the
- * full round-by-round record.
+ * The end-of-match celebration & summary: confetti animation, podium rankings,
+ * round-by-round ledger, and export actions.
  */
 export function SummaryScreen({
   match,
@@ -51,6 +52,22 @@ export function SummaryScreen({
       : t('{{name}} wins!', { name: winnerNames })
     : t('MATCH ENDED');
 
+  // Compute player accuracy stats (% of rounds where trick >= bid)
+  const playerStats = useMemo(() => {
+    const stats: Record<string, { madeCount: number; totalRounds: number }> = {};
+    for (const p of match.players) {
+      stats[p.id] = { madeCount: 0, totalRounds: match.rounds.length };
+    }
+    for (const round of match.rounds) {
+      for (const entry of round.playerEntries) {
+        if (entry.tricksWon >= entry.bid && stats[entry.playerId]) {
+          stats[entry.playerId]!.madeCount++;
+        }
+      }
+    }
+    return stats;
+  }, [match]);
+
   return (
     <div className="screen--light">
       <header className="topbar topbar--light">
@@ -66,10 +83,24 @@ export function SummaryScreen({
         <LanguageToggle />
       </header>
 
+      {/* HERO SECTION WITH CONFETTI */}
       <section className="winner-hero">
+        <div className="confetti-container" aria-hidden="true">
+          {Array.from({ length: 28 }).map((_, i) => (
+            <span
+              key={i}
+              className={`confetti-piece piece-${i % 5}`}
+              style={{
+                left: `${(i * 3.6) % 100}%`,
+                animationDelay: `${(i * 0.14).toFixed(2)}s`,
+              }}
+            />
+          ))}
+        </div>
+
         <div className="winner-animation">
           <span className="winner-hero__crest" aria-hidden="true">
-            <Trophy size={30} />
+            <Trophy size={32} />
           </span>
           <p className="winner-hero__eyebrow">
             {t(isTie ? 'Tied at the top' : 'Winner')}
@@ -89,39 +120,51 @@ export function SummaryScreen({
       </section>
 
       <main className="screen-inner">
+        {/* FINAL STANDINGS PODIUM */}
         <section style={{ marginBottom: 24 }}>
           <h3 className="section-title">
-            <Users size={16} aria-hidden="true" style={{ verticalAlign: '-2px', marginRight: 6 }} />
+            <Users
+              size={16}
+              aria-hidden="true"
+              style={{ verticalAlign: '-2px', marginRight: 6 }}
+            />
             {t('Final standings')}
           </h3>
           <div className="standings">
-            {ranked.map((row) => {
+            {ranked.map((row, idx) => {
               const player = match.players.find((p) => p.id === row.playerId);
-              const isWinner = Boolean(winner?.winnerIds.includes(row.playerId));
+              const isWinner = Boolean(
+                winner?.winnerIds.includes(row.playerId),
+              );
+              const stats = playerStats[row.playerId];
+              const accuracy =
+                stats && stats.totalRounds > 0
+                  ? Math.round((stats.madeCount / stats.totalRounds) * 100)
+                  : 0;
+
               return (
                 <div
                   key={row.playerId}
-                  className={`standing-row${isWinner ? ' standing-row--winner' : ''}`}
+                  className={`standing-row${
+                    isWinner ? ' standing-row--winner' : ''
+                  }`}
                 >
                   <span className="standing-row__rank" aria-hidden="true">
-                    {number(row.rank)}
+                    {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : number(row.rank)}
                   </span>
-                  <span className="standing-row__name">
-                    {player?.name ?? t('Unknown')}
-                    {isWinner && (
-                      <span
-                        style={{
-                          marginLeft: 8,
-                          fontSize: '0.74rem',
-                          fontWeight: 700,
-                          color: 'var(--gold-deep)',
-                          letterSpacing: '0.05em',
-                        }}
-                      >
-                        {t(isTie ? 'TIED' : 'WINNER')}
-                      </span>
-                    )}
-                  </span>
+                  <div className="standing-row__body">
+                    <span className="standing-row__name">
+                      {player?.name ?? t('Unknown')}
+                      {isWinner && (
+                        <span className="standing-winner-tag">
+                          {t(isTie ? 'TIED' : 'WINNER')}
+                        </span>
+                      )}
+                    </span>
+                    <span className="standing-row__sub">
+                      {t('Bid accuracy')}: {number(accuracy)}% ({number(stats?.madeCount ?? 0)}/{number(match.rounds.length)})
+                    </span>
+                  </div>
                   <span className="standing-row__score">
                     {formatScoreValue(row.score, language)}
                   </span>
@@ -131,9 +174,42 @@ export function SummaryScreen({
           </div>
         </section>
 
+        {/* ACTION BUTTONS */}
+        <div className="btn-row" style={{ marginBottom: 24 }}>
+          <button
+            type="button"
+            className="btn btn--primary"
+            onClick={onNewMatch}
+          >
+            <Plus size={18} aria-hidden="true" />
+            {t('New Match')}
+          </button>
+          <button
+            type="button"
+            className="btn btn--forest"
+            onClick={onExportText}
+          >
+            <Share2 size={17} aria-hidden="true" />
+            {t('Share Summary')}
+          </button>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={onExportCsv}
+          >
+            <Table2 size={17} aria-hidden="true" />
+            {t('Download CSV')}
+          </button>
+        </div>
+
+        {/* ROUND BY ROUND HISTORICAL TABLE */}
         <section style={{ marginBottom: 24 }}>
           <h3 className="section-title">
-            <FileText size={16} aria-hidden="true" style={{ verticalAlign: '-2px', marginRight: 6 }} />
+            <FileText
+              size={16}
+              aria-hidden="true"
+              style={{ verticalAlign: '-2px', marginRight: 6 }}
+            />
             {t('Round by round')}
           </h3>
           <p className="muted" style={{ fontSize: '0.86rem', marginBottom: 12 }}>
@@ -144,7 +220,10 @@ export function SummaryScreen({
           <div className="history-list">
             {summaries.map((summary) => (
               <div key={summary.round.id} className="history-card">
-                <div className="history-card__head" style={{ cursor: 'default' }}>
+                <div
+                  className="history-card__head"
+                  style={{ cursor: 'default' }}
+                >
                   <span>
                     <span className="history-card__round">
                       {t('Round {{number}}', {
@@ -171,7 +250,9 @@ export function SummaryScreen({
                     </thead>
                     <tbody>
                       {summary.round.playerEntries.map((entry) => {
-                        const player = match.players.find((p) => p.id === entry.playerId);
+                        const player = match.players.find(
+                          (p) => p.id === entry.playerId,
+                        );
                         return (
                           <tr key={entry.playerId}>
                             <td>{player?.name ?? t('Unknown')}</td>
@@ -186,7 +267,10 @@ export function SummaryScreen({
                                     : ''
                               }`}
                             >
-                              {formatSignedScoreValue(entry.roundScore, language)}
+                              {formatSignedScoreValue(
+                                entry.roundScore,
+                                language,
+                              )}
                             </td>
                             <td className="num">
                               {formatScoreValue(
@@ -205,28 +289,14 @@ export function SummaryScreen({
           </div>
         </section>
 
-        <section style={{ marginBottom: 24 }}>
-          <h3 className="section-title">          {t('Export & share')}</h3>
-          <div className="btn-row">
-            <button type="button" className="btn btn--ghost" onClick={onExportText}>
-              <Share2 size={17} aria-hidden="true" />
-              {t('Share Summary')}
-            </button>
-            <button type="button" className="btn btn--ghost" onClick={onExportCsv}>
-              <Table2 size={17} aria-hidden="true" />
-              {t('Download CSV')}
-            </button>
-          </div>
-        </section>
-
-        <div className="btn-row">
-          <button type="button" className="btn btn--forest" onClick={onNewMatch}>
-            {t('New Match')}
-          </button>
-          <button type="button" className="btn btn--ghost" onClick={onMatchList}>
-            {t('Match List')}
-          </button>
-        </div>
+        <button
+          type="button"
+          className="btn btn--ghost btn--block"
+          onClick={onMatchList}
+          style={{ marginBottom: 16 }}
+        >
+          {t('Match List')}
+        </button>
       </main>
     </div>
   );

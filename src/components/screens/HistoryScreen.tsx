@@ -20,8 +20,8 @@ interface HistoryScreenProps {
 }
 
 /**
- * Round-by-round history. Every round can be inspected, and the latest round
- * can be undone. Editing a round recalculates everything after it.
+ * Round-by-round history. Every round can be inspected with bid/won indicators,
+ * individual rounds can be edited, and the latest round can be undone safely.
  */
 export function HistoryScreen({
   match,
@@ -30,7 +30,9 @@ export function HistoryScreen({
   onUndo,
 }: HistoryScreenProps) {
   const { language, t, number } = useLanguage();
-  const [expanded, setExpanded] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState<number | null>(() =>
+    match.rounds.length > 0 ? match.rounds.length - 1 : null,
+  );
   const [confirmUndo, setConfirmUndo] = useState(false);
   const [undoing, setUndoing] = useState(false);
   const [undoError, setUndoError] = useState<string | null>(null);
@@ -47,7 +49,9 @@ export function HistoryScreen({
       setConfirmUndo(false);
     } catch (cause) {
       setUndoError(
-        cause instanceof Error ? t(cause.message) : t('Could not undo the last round.'),
+        cause instanceof Error
+          ? t(cause.message)
+          : t('Could not undo the last round.'),
       );
       setConfirmUndo(false);
     } finally {
@@ -77,7 +81,9 @@ export function HistoryScreen({
             </span>
             <h2 className="empty-state__title">{t('No rounds yet')}</h2>
             <p className="empty-state__text">
-            {t('Scores you save will appear here, with every bid, trick count and running total.')}
+              {t(
+                'Scores you save will appear here, with every bid, trick count and running total.',
+              )}
             </p>
           </div>
         </main>
@@ -112,9 +118,15 @@ export function HistoryScreen({
             {t(undoError)}
           </div>
         )}
+
         <div className="history-list">
           {summaries.map((summary, index) => {
             const isOpen = expanded === index;
+            const roundDealerSeat = (summary.round.roundNumber - 1) % 4;
+            const dealerPlayer = match.players.find(
+              (p) => p.seatIndex === roundDealerSeat,
+            );
+
             return (
               <article key={summary.round.id} className="history-card">
                 <button
@@ -123,18 +135,23 @@ export function HistoryScreen({
                   onClick={() => setExpanded(isOpen ? null : index)}
                   aria-expanded={isOpen}
                 >
-                  <span>
+                  <div>
                     <span className="history-card__round">
                       {t('Round {{number}}', {
                         number: number(summary.round.roundNumber),
                       })}
+                      {dealerPlayer && (
+                        <span className="history-dealer-badge">
+                          ♠ {dealerPlayer.name}
+                        </span>
+                      )}
                     </span>
                     <span className="history-card__date">
                       {new Date(summary.round.createdAt).toLocaleString(
                         language === 'bn' ? 'bn-BD' : 'en-US',
                       )}
                     </span>
-                  </span>
+                  </div>
                   {isOpen ? (
                     <ChevronDown size={18} aria-hidden="true" />
                   ) : (
@@ -162,9 +179,22 @@ export function HistoryScreen({
                             );
                             const cumulative =
                               summary.cumulativeAfter[entry.playerId] ?? 0;
+                            const made = entry.tricksWon >= entry.bid;
+
                             return (
                               <tr key={entry.playerId}>
-                                <td>{player?.name ?? t('Unknown')}</td>
+                                <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span>{player?.name ?? t('Unknown')}</span>
+                                    <span
+                                      className={`mini-pill ${
+                                        made ? 'mini-pill--pos' : 'mini-pill--neg'
+                                      }`}
+                                    >
+                                      {made ? '✓' : '✗'}
+                                    </span>
+                                  </div>
+                                </td>
                                 <td className="num">{number(entry.bid)}</td>
                                 <td className="num">{number(entry.tricksWon)}</td>
                                 <td
@@ -176,9 +206,14 @@ export function HistoryScreen({
                                         : ''
                                   }`}
                                 >
-                                  {formatSignedScoreValue(entry.roundScore, language)}
+                                  {formatSignedScoreValue(
+                                    entry.roundScore,
+                                    language,
+                                  )}
                                 </td>
-                                <td className="num">{formatScoreValue(cumulative, language)}</td>
+                                <td className="num">
+                                  {formatScoreValue(cumulative, language)}
+                                </td>
                               </tr>
                             );
                           })}
@@ -204,7 +239,7 @@ export function HistoryScreen({
           })}
         </div>
 
-        <div style={{ marginTop: 18 }}>
+        <div style={{ marginTop: 20 }}>
           <button
             type="button"
             className="btn btn--danger btn--block"
@@ -216,19 +251,28 @@ export function HistoryScreen({
           </button>
         </div>
 
-        <p className="muted" style={{ fontSize: '0.8rem', marginTop: 12, textAlign: 'center' }}>
-          {t('Editing a round recalculates every later round and the final result.')}
+        <p
+          className="muted"
+          style={{ fontSize: '0.8rem', marginTop: 12, textAlign: 'center' }}
+        >
+          {t(
+            'Editing a round recalculates every later round and the final result.',
+          )}
         </p>
       </main>
 
       {confirmUndo && (
         <ConfirmDialog
+          open={confirmUndo}
           title={t('Undo the last round?')}
-          body={
-            t('Round {{number}} will be removed and every total recalculated. This cannot be undone.', {
-              number: number(match.rounds[lastRoundIndex]?.roundNumber ?? 0),
-            })
-          }
+          body={t(
+            'Round {{number}} will be removed and every total recalculated. This cannot be undone.',
+            {
+              number: number(
+                match.rounds[lastRoundIndex]?.roundNumber ?? 0,
+              ),
+            },
+          )}
           confirmLabel={t('Undo Round')}
           destructive
           onConfirm={handleUndo}

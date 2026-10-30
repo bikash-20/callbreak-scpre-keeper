@@ -1,4 +1,4 @@
-import { Crown } from 'lucide-react';
+import { Crown, Sparkles } from 'lucide-react';
 import { pointsToUnits } from '../lib/scoring';
 import type { Player } from '../types/match';
 import { useLanguage } from '../LanguageContext';
@@ -14,11 +14,13 @@ interface PlayerCardProps {
   targetScore: number;
   /** True when this player currently leads. */
   isLeader: boolean;
+  /** True when this player deals the current/next round. */
+  isDealer?: boolean;
 }
 
 /**
- * A compact dashboard card for one player: rank, name, cumulative score,
- * latest round delta and progress toward the target.
+ * A compact, responsive dashboard card for one player: rank, name, cumulative score,
+ * dealer status, latest round delta and progress toward the target.
  */
 export function PlayerCard({
   player,
@@ -27,11 +29,13 @@ export function PlayerCard({
   rank,
   targetScore,
   isLeader,
+  isDealer = false,
 }: PlayerCardProps) {
   const { language, t, number } = useLanguage();
   const targetUnits = pointsToUnits(targetScore);
   // Progress is clamped to 0-100%; a negative score shows no progress.
-  const progress = targetUnits > 0 ? Math.min(100, Math.max(0, (score / targetUnits) * 100)) : 0;
+  const progress =
+    targetUnits > 0 ? Math.min(100, Math.max(0, (score / targetUnits) * 100)) : 0;
   const reachedTarget = score >= targetUnits;
 
   const deltaClass =
@@ -45,19 +49,34 @@ export function PlayerCard({
 
   return (
     <article
-      className={`player-card${isLeader ? ' player-card--leader' : ''}`}
-      aria-label={`${player.name}, ${t('rank {{rank}}', { rank: number(rank) })}, ${formatScoreValue(score, language)} ${t('points')}`}
+      className={`player-card${isLeader ? ' player-card--leader' : ''}${
+        isDealer ? ' player-card--dealer' : ''
+      }`}
+      aria-label={`${player.name}, ${t('rank {{rank}}', {
+        rank: number(rank),
+      })}, ${formatScoreValue(score, language)} ${t('points')}`}
     >
       <div className="player-card__top">
         <span className="player-card__rank" aria-hidden="true">
           {number(rank)}
         </span>
-        {isLeader && (
-          <span className="player-card__leader-tag">
-            <Crown size={12} aria-hidden="true" />
-            {t('Leader')}
-          </span>
-        )}
+        <div className="player-card__tags">
+          {isDealer && (
+            <span
+              className="player-card__dealer-tag"
+              title={t('Dealer for the round')}
+            >
+              <Sparkles size={11} aria-hidden="true" />
+              <span>{t('Dealer')}</span>
+            </span>
+          )}
+          {isLeader && (
+            <span className="player-card__leader-tag">
+              <Crown size={12} aria-hidden="true" />
+              {t('Leader')}
+            </span>
+          )}
+        </div>
       </div>
 
       <h3 className="player-card__name" title={player.name}>
@@ -65,7 +84,9 @@ export function PlayerCard({
       </h3>
 
       <div
-        className={`player-card__score${score < 0 ? ' player-card__score--negative' : ''}`}
+        className={`player-card__score${
+          score < 0 ? ' player-card__score--negative' : ''
+        }`}
       >
         {formatScoreValue(score, language)}
       </div>
@@ -98,7 +119,10 @@ export function PlayerCard({
         <p className="progress__label">
           {reachedTarget
             ? t('Target reached ({{score}})', { score: number(targetScore) })
-            : `${formatScoreValue(Math.max(0, targetUnits - score), language)} ${t('to go')}`}
+            : `${formatScoreValue(
+                Math.max(0, targetUnits - score),
+                language,
+              )} ${t('to go')}`}
         </p>
       </div>
     </article>

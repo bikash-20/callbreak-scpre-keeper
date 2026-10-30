@@ -1,17 +1,25 @@
 import { useMemo } from 'react';
 import {
   ArrowLeft,
+  Download,
   Flag,
   History,
   Settings,
   Share2,
+  Sparkles,
   Trophy,
 } from 'lucide-react';
 import type { Match } from '../../types/match';
-import { cumulativeScores, evaluateWinner, latestRoundScores, rankings } from '../../lib/derive';
+import {
+  cumulativeScores,
+  evaluateWinner,
+  latestRoundScores,
+  rankings,
+} from '../../lib/derive';
 import { formatScoreValue } from '../../lib/i18n';
 import { LanguageToggle, useLanguage } from '../../LanguageContext';
 import { PlayerCard } from '../PlayerCard';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 
 interface DashboardScreenProps {
   match: Match;
@@ -23,8 +31,8 @@ interface DashboardScreenProps {
 }
 
 /**
- * The match dashboard: current round, target score, the four player cards with
- * live standings, and the primary "Enter Round" action.
+ * The match dashboard: current round, target score, rotating dealer, the four
+ * player cards with live standings, and the primary "Enter Round" action.
  */
 export function DashboardScreen({
   match,
@@ -35,6 +43,7 @@ export function DashboardScreen({
   onBack,
 }: DashboardScreenProps) {
   const { language, t, number } = useLanguage();
+  const { state: installState, install } = useInstallPrompt();
   const totals = useMemo(() => cumulativeScores(match), [match]);
   const ranked = useMemo(() => rankings(match), [match]);
   const latest = useMemo(() => latestRoundScores(match), [match]);
@@ -43,6 +52,12 @@ export function DashboardScreen({
   const currentRound = match.rounds.length + 1;
   const leaderId = ranked[0]?.playerId;
   const isComplete = match.status === 'completed';
+
+  // Dealer rotates clockwise each round in Callbreak
+  const dealerSeatIndex = (currentRound - 1) % 4;
+  const currentDealer = match.players.find(
+    (p) => p.seatIndex === dealerSeatIndex,
+  );
 
   return (
     <div className="screen--dark">
@@ -63,6 +78,19 @@ export function DashboardScreen({
               : t('Round {{number}}', { number: number(currentRound) })}
           </span>
         </h1>
+
+        {installState === 'can-install' && (
+          <button
+            type="button"
+            className="icon-btn install-icon-btn"
+            onClick={() => void install()}
+            aria-label={t('Install App')}
+            title={t('Install Callbreak')}
+          >
+            <Download size={19} />
+          </button>
+        )}
+
         <LanguageToggle />
         <button
           type="button"
@@ -94,9 +122,19 @@ export function DashboardScreen({
               <span className="meta-pill">
                 <Trophy size={13} aria-hidden="true" />
                 {isComplete
-                  ? `${number(match.rounds.length)} ${t(match.rounds.length === 1 ? 'round' : 'rounds')}`
-                  : t('Round {{number}} of play', { number: number(currentRound) })}
+                  ? `${number(match.rounds.length)} ${t(
+                      match.rounds.length === 1 ? 'round' : 'rounds',
+                    )}`
+                  : t('Round {{number}} of play', {
+                      number: number(currentRound),
+                    })}
               </span>
+              {!isComplete && currentDealer && (
+                <span className="meta-pill meta-pill--dealer">
+                  <Sparkles size={13} aria-hidden="true" />
+                  {t('Dealer: {{name}}', { name: currentDealer.name })}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -120,7 +158,9 @@ export function DashboardScreen({
                   score: formatScoreValue(winner.topScore, language),
                 })
               : t('{{name}} has won with {{score}} points.', {
-                  name: match.players.find((p) => p.id === winner.winnerIds[0])?.name ?? '',
+                  name:
+                    match.players.find((p) => p.id === winner.winnerIds[0])
+                      ?.name ?? '',
                   score: formatScoreValue(winner.topScore, language),
                 })}
           </div>
@@ -128,7 +168,8 @@ export function DashboardScreen({
 
         <div className="player-grid">
           {match.players.map((player) => {
-            const rank = ranked.find((row) => row.playerId === player.id)?.rank ?? 0;
+            const rank =
+              ranked.find((row) => row.playerId === player.id)?.rank ?? 0;
             return (
               <PlayerCard
                 key={player.id}
@@ -138,6 +179,7 @@ export function DashboardScreen({
                 rank={rank}
                 targetScore={match.targetScore}
                 isLeader={rank === 1 && leaderId === player.id}
+                isDealer={!isComplete && player.seatIndex === dealerSeatIndex}
               />
             );
           })}
@@ -163,11 +205,19 @@ export function DashboardScreen({
           )}
 
           <div className="btn-row">
-            <button type="button" className="btn btn--ghost-dark" onClick={onHistory}>
+            <button
+              type="button"
+              className="btn btn--ghost-dark"
+              onClick={onHistory}
+            >
               <History size={17} aria-hidden="true" />
               {t('History')}
             </button>
-            <button type="button" className="btn btn--ghost-dark" onClick={onExport}>
+            <button
+              type="button"
+              className="btn btn--ghost-dark"
+              onClick={onExport}
+            >
               <Share2 size={17} aria-hidden="true" />
               {t('Export')}
             </button>
@@ -178,7 +228,9 @@ export function DashboardScreen({
           className="muted-dark"
           style={{ fontSize: '0.78rem', textAlign: 'center', marginTop: 20 }}
         >
-          {t('Saved on this device and works offline. Export important matches for a backup; browser storage is not guaranteed permanent.')}
+          {t(
+            'Saved on this device and works offline. Export important matches for a backup; browser storage is not guaranteed permanent.',
+          )}
         </p>
       </main>
     </div>
